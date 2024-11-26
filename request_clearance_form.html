@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request Clearance</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin: 10px 0 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        select, input[type="checkbox"], input[type="submit"] {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        input[type="submit"] {
+            background-color: #28a745;
+            color: #fff;
+            cursor: pointer;
+            border: none;
+        }
+        input[type="submit"]:hover {
+            background-color: #218838;
+        }
+        input[type="checkbox"] {
+            margin-right: 10px;
+        }
+    </style>
+    <!-- Include jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <h2>Request Clearance</h2>
+    <form method="POST" action="submit_clearance_request.php">
+        <!-- Other form fields -->
+        <label for="all_departments">Request clearance from all departments:</label>
+        <input type="checkbox" name="all_departments" value="yes">
+        
+        <!-- Dropdown for individual departments -->
+        <label for="department">Select Department:</label>
+        <select name="department">
+            <option value="Assistant Registrar Examination">Assistant Registrar Examination</option>
+            <option value="Assistant Registrar Student Affairs">Assistant Registrar Student Affairs</option>
+            <option value="Director/Head">Director/Head</option>
+            <option value="Librarian">Librarian</option>
+            <option value="Bursar">Bursar</option>
+            <option value="Deputy Registrar Student Affairs">Deputy Registrar Student Affairs</option>
+        </select>
+        
+        <input type="submit" name="submit" value="Submit Clearance Request">
+    </form>
+    
+    
+</div>
+
+<!-- JavaScript for AJAX form submission and showing popup -->
+<script>
+    $(document).ready(function() {
+        $('#clearanceForm').submit(function(event) {
+            event.preventDefault(); // Prevent the form from submitting the normal way
+
+            var formData = $(this).serialize(); // Collect form data
+            
+            // Perform AJAX request
+            $.ajax({
+                type: 'POST',
+                url: 'submit_clearance_request.php', // URL to your PHP processing file
+                data: formData,
+                success: function(response) {
+                    // Show a popup message based on the server response
+                    alert(response); // You can replace this with custom popup code if needed
+                },
+                error: function() {
+                    alert('Error submitting the request.');
+                }
+            });
+        });
+    });
+</script>
+
+</body>
+</html>
