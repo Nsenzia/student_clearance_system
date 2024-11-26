@@ -2,65 +2,75 @@
  session_start();
  error_reporting(0);
  include('../connect.php');
-if(strlen($_SESSION['admin-username'])=="")
-    {   
-    header("Location: login.php"); 
-    }
-    else{
-	}
-	$username=$_SESSION['admin-username'];
-	
-	date_default_timezone_set('Africa/Lagos');
-$current_date = date('Y-m-d H:i:s');
+ include('../connect2.php');
 
+$username=$_SESSION['admin-username'];
 $sql = "select * from admin where username='$username'"; 
 $result = $conn->query($sql);
 $row1= mysqli_fetch_array($result);
 
-  $q = "select * from admin where username = '$username'";
-  $q1 = $conn->query($q);
-  while($row = mysqli_fetch_array($q1)){
-    extract($row);
-    $db_pass = $row['password'];
-	 $email = $row['email'];
-  }
+date_default_timezone_set('Africa/Lagos');
+$current_date = date('Y-m-d H:i:s');
 
-if(isset($_POST["btnpassword"])){
-  
-  $old = $_POST['txtold_password'];
-  $pass_new =  $_POST['txtnew_password'];
-  $confirm_new =  $_POST['txtconfirm_password'];
+ 
+if(isset($_POST["btnregister"]))
+{
 
 
-  if($db_pass!=$old){ ?> 
-    <?php $_SESSION['error']='Old Password not matched';?>
-   <!--  <script>
-    alert('OLD Paasword not matched');
-    </script> -->
-  <?php } else if($pass_new!=$confirm_new){ ?> 
-    <?php $_SESSION['error']='NEW Password and CONFIRM password not Matched';?>
-   <!--  <script>
-    alert('NEW Password and CONFIRM password not Matched');
-    </script> -->
-  <?php } else {
-    //$pass = md5($_POST['password']);
-   $sql = "update  admin set `password`='$confirm_new' where username= '".$_SESSION['admin-username']."'";
-  $res = $conn->query($sql);
-  ?>
-   <?php 
+  $permitted_chars = '0123456789abcdefghijklmnopqrstuvwxyz';
+  $password_stud = substr(str_shuffle($permitted_chars), 0, 6);
 
-  
-   
-   $_SESSION['success']='Password changed Successfully...';?>
-  <script>
-    //alert('Password changed Successfully...');
-    window.location ="logout.php";
-  </script> 
-  <?php
-    
-  }
+$fullname = mysqli_real_escape_string($conn,$_POST['txtfullname']);
+$matric_no = mysqli_real_escape_string($conn,$_POST['txtmatric_no']);
+$phone = mysqli_real_escape_string($conn,$_POST['txtphone']);
+$session = mysqli_real_escape_string($conn,$_POST['cmdsession']);
+$faculty = mysqli_real_escape_string($conn,$_POST['cmdfaculty']);
+$dept = mysqli_real_escape_string($conn,$_POST['cmddept']);
+$phone = mysqli_real_escape_string($conn,$_POST['txtphone']);
+
+
+ $sql = "SELECT * FROM students where matric_no='$matric_no'";
+$result = mysqli_query($conn, $sql);
+
+if (mysqli_num_rows($result) > 0) {
+$_SESSION['error'] =' Matric No already Exist ';
+
+}else{
+//save users details
+$query = "INSERT into `students` (fullname,matric_no,password,session,faculty,dept,phone,photo)
+VALUES ('$fullname','$matric_no','$password_stud','$session','$faculty','$dept','$phone','uploads/avatar_nick.png')";
+
+
+    $result = mysqli_query($conn,$query);
+      if($result){
+	  $_SESSION['matric_no']=$matric_no;
+
+//SEnd password Via SMS
+$username='rexrolex0@gmail.com';//Note: urlencodemust be added forusernameand 
+$password='admin123';// passwordas encryption code for security purpose.
+
+$sender='AUTHUR-JAVI';
+$message  = 'Dear '.$fullname.', Your password for online clearance system is :'.$password_stud.' ';
+$api_url  = 'https://portal.nigeriabulksms.com/api/';
+
+//Create the message data
+$data = array('username'=>$username, 'password'=>$password, 'sender'=>$sender, 'message'=>$message, 'mobiles'=>$phone);
+//URL encode the message data
+$data = http_build_query($data);
+//Send the message
+$request = $api_url.'?'.$data;
+$result  = file_get_contents($request);
+$result  = json_decode($result);
+
+
+$_SESSION['success'] ='Student Registration was successful';
+
+}else{
+$_SESSION['error'] ='Problem registering student';
+
 }
-
+}
+}
 
 ?>
 <!DOCTYPE html>
@@ -68,7 +78,7 @@ if(isset($_POST["btnpassword"])){
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Change Password|Admin Dashboard</title>
+  <title>Register Student|Dashboard</title>
  <link rel="icon" type="image/png" sizes="16x16" href="../images/favicon.png">
   <!-- Google Font: Source Sans Pro -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
@@ -90,7 +100,6 @@ if(isset($_POST["btnpassword"])){
   <link rel="stylesheet" href="plugins/daterangepicker/daterangepicker.css">
   <!-- summernote -->
   <link rel="stylesheet" href="plugins/summernote/summernote-bs4.min.css">
-
   <style>
         .custom-green-btn {
             background-color: #187C4E !important;
@@ -120,7 +129,7 @@ if(isset($_POST["btnpassword"])){
       <div class="input-group input-group-sm">
         <input class="form-control form-control-navbar" type="search" placeholder="Search" aria-label="Search">
         <div class="input-group-append">
-          <button class="btn btn-navbar" type="submit">
+          <button class="btn btn-navbar " type="submit">
             <i class="fas fa-search"></i>
           </button>
         </div>
@@ -140,7 +149,7 @@ if(isset($_POST["btnpassword"])){
     <!-- Brand Logo -->
     <a href="index.php" class="brand-link">
       <img src="../images/logo.png" alt=" Logo"  width="200" height="111" class="" style="opacity: .8">
-      <span class="brand-text font-weight-light"></span>
+	  <span class="brand-text font-weight-light"></span>
     </a>
 
     <!-- Sidebar -->
@@ -197,7 +206,7 @@ if(isset($_POST["btnpassword"])){
           <div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
               <li class="breadcrumb-item"><a href="#">Home</a></li>
-              <li class="breadcrumb-item active">Change Password  </li>
+              <li class="breadcrumb-item active ">Register Student</li>
             </ol>
           </div><!-- /.col -->
         </div><!-- /.row -->
@@ -213,30 +222,69 @@ if(isset($_POST["btnpassword"])){
         
 		 <!-- general form elements -->
             <div class="card card-primary">
-              <div class="card-header  custom-green-btn">
-                <h3 class="card-title">Change Password </h3>
+              <div class="card-header custom-green-btn">
+                <h3 class="card-title ">Register Student </h3>
               </div>
               <!-- /.card-header -->
               <!-- form start -->
                <form id="form" action="" method="post" class="">
                 <div class="card-body">
                   <div class="form-group">
-                    <label for="exampleInputEmail1">Old Password </label>
-                    <input type="password" class="form-control" name="txtold_password" id="exampleInputEmail1" size="77" value="<?php if (isset($_POST['txtold_password']))?><?php echo $_POST['txtold_password']; ?>" placeholder="Enter Old Password">
+                    <label for="exampleInputEmail1">Fullname </label>
+                    <input type="text" class="form-control" name="txtfullname" id="exampleInputEmail1" size="77" value="<?php if (isset($_POST['txtfullname']))?><?php echo $_POST['txtfullname']; ?>" placeholder="Enter Fullname">
                   </div>
-                  <div class="form-group">
-                    <label for="exampleInputPassword1">New Password</label>
-                    <input type="password" class="form-control" name="txtnew_password" id="exampleInputPassword1" size="77" value="<?php if (isset($_POST['txtnew_password']))?><?php echo $_POST['txtnew_password']; ?>" placeholder="Enter New Password">
+				   <div class="form-group">
+                    <label for="exampleInputEmail1">Studen No. </label>
+                    <input type="text" class="form-control" name="txtmatric_no" id="exampleInputEmail1" size="77" value="<?php if (isset($_POST['txtmatric_no']))?><?php echo $_POST['txtmatric_no']; ?>" placeholder="Enter Matric No.">
                   </div>
-                  <div class="form-group">
-                    <label for="exampleInputPassword1">New Password</label>
-                    <input type="password" class="form-control" name="txtconfirm_password" id="exampleInputPassword1" size="77" value="<?php if (isset($_POST['txtconfirm_password']))?><?php echo $_POST['txtconfirm_password']; ?>" placeholder="Confirm New Password">
-                  </div>
-                </div>
-                <!-- /.card-body -->
 
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Phone No. </label>
+                    <input type="text" class="form-control" name="txtphone" id="exampleInputEmail1" size="77" value="<?php if (isset($_POST['txtphone']))?><?php echo $_POST['txtphone']; ?>" placeholder="Enter Phone">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="exampleInputPassword1">Session</label>
+                    <?php
+//Our select statement. This will retrieve the data that we want.
+$sql = "SELECT * FROM tblsession";
+//Prepare the select statement.
+$stmt = $dbh->prepare($sql);
+//Execute the statement.
+$stmt->execute();
+//Retrieve the rows using fetchAll.
+$sessions = $stmt->fetchAll();
+?>
+      <select name="cmdsession" id="select" class="form-control" required="">
+    <?php foreach($sessions as $row_session): ?>
+        <option value="<?= $row_session['session']; ?>"><?= $row_session['session']; ?></option>
+    <?php endforeach; ?>
+</select>
+                  
+                  </div>
+                  <div class="form-group">
+                    <label for="exampleInputPassword1">Faculty</label>
+                    <select name="cmdfaculty" id="select" class="form-control" required="">
+    <option value="Select faculty">Select faculty</option>
+   <option value="Science">Science</option>
+   <option value="Engineering">Engineering</option>
+   <option value="Social Science">Social Science</option>
+   </select>  
+     </div>
+				  <div class="form-group">
+                    <label for="exampleInputPassword1">Department</label>
+                    <select name="cmddept" id="select" class="form-control" required="">
+    <option value="Select Department">Select Department</option>
+   <option value="Computer Science">Computer Science</option>
+   <option value="Electrical Engineering">Electrical Engineering</option>
+   <option value="Business Management">Business Management</option>
+   <option value="Information Technology">Information Technology</option>
+   </select>  
+    </div>
+		   </div>
+                <!-- /.card-body -->
                 <div class="card-footer">
-                  <button type="submit" name="btnpassword" class="btn btn-primary  custom-green-btn">Change </button>
+                  <button type="submit" name="btnregister" class="btn btn-primary custom-green-btn">Register Student</button>
                 </div>
               </form>
             </div>

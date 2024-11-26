@@ -1,74 +1,49 @@
 <?php
- session_start();
- error_reporting(0);
- include('../connect.php');
+session_start();
+error_reporting(0);
+include('../connect.php');
+
 if(strlen($_SESSION['admin-username'])=="")
     {   
     header("Location: login.php"); 
     }
     else{
 	}
-	$username=$_SESSION['admin-username'];
-	
-	date_default_timezone_set('Africa/Lagos');
+      
+$username = $_SESSION["admin-username"];
+$id=$_GET['id'];
+
+date_default_timezone_set('Africa/Lagos');
 $current_date = date('Y-m-d H:i:s');
 
 $sql = "select * from admin where username='$username'"; 
 $result = $conn->query($sql);
-$row1= mysqli_fetch_array($result);
+$rowaccess= mysqli_fetch_array($result);
 
-  $q = "select * from admin where username = '$username'";
-  $q1 = $conn->query($q);
-  while($row = mysqli_fetch_array($q1)){
-    extract($row);
-    $db_pass = $row['password'];
-	 $email = $row['email'];
-  }
+if(isset($_POST["btnedit"]))
+{
 
-if(isset($_POST["btnpassword"])){
-  
-  $old = $_POST['txtold_password'];
-  $pass_new =  $_POST['txtnew_password'];
-  $confirm_new =  $_POST['txtconfirm_password'];
+$fullname = mysqli_real_escape_string($conn,$_POST['txtfullname']);
+$email = mysqli_real_escape_string($conn,$_POST['txtemail']);
+$designation = mysqli_real_escape_string($conn,$_POST['cmddesignation']);
 
 
-  if($db_pass!=$old){ ?> 
-    <?php $_SESSION['error']='Old Password not matched';?>
-   <!--  <script>
-    alert('OLD Paasword not matched');
-    </script> -->
-  <?php } else if($pass_new!=$confirm_new){ ?> 
-    <?php $_SESSION['error']='NEW Password and CONFIRM password not Matched';?>
-   <!--  <script>
-    alert('NEW Password and CONFIRM password not Matched');
-    </script> -->
-  <?php } else {
-    //$pass = md5($_POST['password']);
-   $sql = "update  admin set `password`='$confirm_new' where username= '".$_SESSION['admin-username']."'";
-  $res = $conn->query($sql);
-  ?>
-   <?php 
+$sql = " update admin set fullname='$fullname',email='$email', designation='$designation' where ID='$id'";
+if (mysqli_query($conn, $sql)) {
 
-  
-   
-   $_SESSION['success']='Password changed Successfully...';?>
-  <script>
-    //alert('Password changed Successfully...');
-    window.location ="logout.php";
-  </script> 
-  <?php
-    
-  }
+header("Location: admin-record.php");
+}else{
+$_SESSION['error']='Editing Was Not Successful';
+
 }
-
-
-?>
+}
+?> 
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Change Password|Admin Dashboard</title>
+  <title>Edit User Profile|Admin Dashboard</title>
  <link rel="icon" type="image/png" sizes="16x16" href="../images/favicon.png">
   <!-- Google Font: Source Sans Pro -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
@@ -90,16 +65,6 @@ if(isset($_POST["btnpassword"])){
   <link rel="stylesheet" href="plugins/daterangepicker/daterangepicker.css">
   <!-- summernote -->
   <link rel="stylesheet" href="plugins/summernote/summernote-bs4.min.css">
-
-  <style>
-        .custom-green-btn {
-            background-color: #187C4E !important;
-            border-color: #187C4E !important;
-            color: white !important;
-            border: 2px solid #187C4E;
-            border-radius: 25px; /* Rounded button */
-        }
-    </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
@@ -140,7 +105,7 @@ if(isset($_POST["btnpassword"])){
     <!-- Brand Logo -->
     <a href="index.php" class="brand-link">
       <img src="../images/logo.png" alt=" Logo"  width="200" height="111" class="" style="opacity: .8">
-      <span class="brand-text font-weight-light"></span>
+	  <span class="brand-text font-weight-light"></span>
     </a>
 
     <!-- Sidebar -->
@@ -148,9 +113,9 @@ if(isset($_POST["btnpassword"])){
       <!-- Sidebar user panel (optional) -->
       <div class="user-panel mt-3 pb-3 mb-3 d-flex">
         <div class="image">
-          <img src="../<?php echo $row1['photo'];    ?>" alt="User Image" width="220" height="192" class="img-circle elevation-2">        </div>
+          <img src="../<?php echo $rowaccess['photo'];    ?>" alt="User Image" width="220" height="192" class="img-circle elevation-2">        </div>
         <div class="info">
-          <a href="#" class="d-block"><?php echo $row1['fullname'];  ?></a>
+          <a href="#" class="d-block"><?php echo $rowaccess['fullname'];  ?></a>
         </div>
       </div>
 
@@ -197,7 +162,7 @@ if(isset($_POST["btnpassword"])){
           <div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
               <li class="breadcrumb-item"><a href="#">Home</a></li>
-              <li class="breadcrumb-item active">Change Password  </li>
+              <li class="breadcrumb-item active">Edit User </li>
             </ol>
           </div><!-- /.col -->
         </div><!-- /.row -->
@@ -213,30 +178,42 @@ if(isset($_POST["btnpassword"])){
         
 		 <!-- general form elements -->
             <div class="card card-primary">
-              <div class="card-header  custom-green-btn">
-                <h3 class="card-title">Change Password </h3>
+              <div class="card-header">
+                <h3 class="card-title">Edit User Profile </h3>
               </div>
               <!-- /.card-header -->
               <!-- form start -->
-               <form id="form" action="" method="post" class="">
+             <form  action="" method="POST" enctype="multipart/form-data">
                 <div class="card-body">
-                  <div class="form-group">
-                    <label for="exampleInputEmail1">Old Password </label>
-                    <input type="password" class="form-control" name="txtold_password" id="exampleInputEmail1" size="77" value="<?php if (isset($_POST['txtold_password']))?><?php echo $_POST['txtold_password']; ?>" placeholder="Enter Old Password">
+                 
+				   <div class="form-group">
+                    <label for="exampleInputEmail1">Fullname </label>
+                    <input type="text" class="form-control" name="txtfullname" id="exampleInputEmail1" size="77" value="<?php echo $rowaccess['fullname'];   ?>" placeholder="Enter Fullname">
                   </div>
-                  <div class="form-group">
-                    <label for="exampleInputPassword1">New Password</label>
-                    <input type="password" class="form-control" name="txtnew_password" id="exampleInputPassword1" size="77" value="<?php if (isset($_POST['txtnew_password']))?><?php echo $_POST['txtnew_password']; ?>" placeholder="Enter New Password">
+                 
+				  <div class="form-group">
+                    <label for="exampleInputPassword1">Email</label>
+                    <input type="text" class="form-control" name="txtemail" id="exampleInputPassword1" size="77" value="<?php echo $rowaccess['email'];   ?>" placeholder="Enter Email">
                   </div>
+				
                   <div class="form-group">
-                    <label for="exampleInputPassword1">New Password</label>
-                    <input type="password" class="form-control" name="txtconfirm_password" id="exampleInputPassword1" size="77" value="<?php if (isset($_POST['txtconfirm_password']))?><?php echo $_POST['txtconfirm_password']; ?>" placeholder="Confirm New Password">
-                  </div>
+                    <label for="exampleInputPassword1">Designation</label>
+                    <select name="cmddesignation" id="select" class="form-control" required="">
+    <option value="<?php echo $rowaccess['designation']; ?>"><?php echo $rowaccess['designation']; ?></option>
+   <option value="Super Admin">Super Admin</option>
+   <option value="Librarian">Librarian</option>
+   <option value="Bursar">Bursar</option>
+   <option value="Sport Director">Sport Director</option>
+
+   </select> 
+  </div>
+                  
+                  
                 </div>
                 <!-- /.card-body -->
-
+ 
                 <div class="card-footer">
-                  <button type="submit" name="btnpassword" class="btn btn-primary  custom-green-btn">Change </button>
+                  <button type="submit" name="btnedit" class="btn btn-primary">Update</button>
                 </div>
               </form>
             </div>

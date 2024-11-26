@@ -2,65 +2,59 @@
  session_start();
  error_reporting(0);
  include('../connect.php');
-if(strlen($_SESSION['admin-username'])=="")
-    {   
-    header("Location: login.php"); 
-    }
-    else{
-	}
-	$username=$_SESSION['admin-username'];
-	
-	date_default_timezone_set('Africa/Lagos');
-$current_date = date('Y-m-d H:i:s');
 
+$username=$_SESSION['admin-username'];
 $sql = "select * from admin where username='$username'"; 
 $result = $conn->query($sql);
 $row1= mysqli_fetch_array($result);
 
-  $q = "select * from admin where username = '$username'";
-  $q1 = $conn->query($q);
-  while($row = mysqli_fetch_array($q1)){
-    extract($row);
-    $db_pass = $row['password'];
-	 $email = $row['email'];
-  }
+date_default_timezone_set('Africa/zambia');
+$current_date = date('Y-m-d H:i:s');
 
-if(isset($_POST["btnpassword"])){
-  
-  $old = $_POST['txtold_password'];
-  $pass_new =  $_POST['txtnew_password'];
-  $confirm_new =  $_POST['txtconfirm_password'];
+ 
+if(isset($_POST["btncreate"]))
+{
+
+$username = mysqli_real_escape_string($conn,$_POST['txtusername']);
+$fullname = mysqli_real_escape_string($conn,$_POST['txtfullname']);
+$email = mysqli_real_escape_string($conn,$_POST['txtemail']);
+$password = mysqli_real_escape_string($conn,$_POST['txtpassword']);
+$password2 = mysqli_real_escape_string($conn,$_POST['txtpassword2']);
+$designation = mysqli_real_escape_string($conn,$_POST['cmddesignation']);
 
 
-  if($db_pass!=$old){ ?> 
-    <?php $_SESSION['error']='Old Password not matched';?>
-   <!--  <script>
-    alert('OLD Paasword not matched');
-    </script> -->
-  <?php } else if($pass_new!=$confirm_new){ ?> 
-    <?php $_SESSION['error']='NEW Password and CONFIRM password not Matched';?>
-   <!--  <script>
-    alert('NEW Password and CONFIRM password not Matched');
-    </script> -->
-  <?php } else {
-    //$pass = md5($_POST['password']);
-   $sql = "update  admin set `password`='$confirm_new' where username= '".$_SESSION['admin-username']."'";
-  $res = $conn->query($sql);
-  ?>
-   <?php 
+ $sql = "SELECT * FROM admin where username='$username'";
+$result = mysqli_query($conn, $sql);
 
-  
-   
-   $_SESSION['success']='Password changed Successfully...';?>
-  <script>
-    //alert('Password changed Successfully...');
-    window.location ="logout.php";
-  </script> 
-  <?php
-    
-  }
+if (mysqli_num_rows($result) > 0) {
+$_SESSION['error'] =' Username Already Exist ';
+
+}elseif($password!=$password2){ 
+$_SESSION['error'] ='Both Passwords Do not match';
+
+}elseif(strlen($password) < 8){ 
+$_SESSION['error'] ='Password must be at least 8 characters';
+
+
+}else{
+//save users details
+$query = "INSERT into `admin` (username,password,designation,fullname,email,status,photo)
+VALUES ('$username','$password','$designation','$fullname','$email','Active','uploads/avatar_nick.png')";
+
+
+    $result = mysqli_query($conn,$query);
+      if($result){
+	  $_SESSION['email']=$email;
+	  $_SESSION['password']=$password;
+
+    $_SESSION['success'] ='User Added Successfully';
+
+}else{
+  $_SESSION['error'] ='Problem Adding User';
+
 }
-
+}
+}
 
 ?>
 <!DOCTYPE html>
@@ -68,7 +62,7 @@ if(isset($_POST["btnpassword"])){
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Change Password|Admin Dashboard</title>
+  <title>Create User|Dashboard</title>
  <link rel="icon" type="image/png" sizes="16x16" href="../images/favicon.png">
   <!-- Google Font: Source Sans Pro -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
@@ -140,7 +134,7 @@ if(isset($_POST["btnpassword"])){
     <!-- Brand Logo -->
     <a href="index.php" class="brand-link">
       <img src="../images/logo.png" alt=" Logo"  width="200" height="111" class="" style="opacity: .8">
-      <span class="brand-text font-weight-light"></span>
+	  <span class="brand-text font-weight-light"></span>
     </a>
 
     <!-- Sidebar -->
@@ -197,7 +191,7 @@ if(isset($_POST["btnpassword"])){
           <div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
               <li class="breadcrumb-item"><a href="#">Home</a></li>
-              <li class="breadcrumb-item active">Change Password  </li>
+              <li class="breadcrumb-item active ">Create User </li>
             </ol>
           </div><!-- /.col -->
         </div><!-- /.row -->
@@ -212,31 +206,52 @@ if(isset($_POST["btnpassword"])){
         <div class="row">
         
 		 <!-- general form elements -->
-            <div class="card card-primary">
-              <div class="card-header  custom-green-btn">
-                <h3 class="card-title">Change Password </h3>
+            <div class="card card-primary  ">
+              <div class="card-header custom-green-btn ">
+                <h3 class="card-title custom-green-btn ">Create User </h3>
               </div>
               <!-- /.card-header -->
               <!-- form start -->
                <form id="form" action="" method="post" class="">
                 <div class="card-body">
                   <div class="form-group">
-                    <label for="exampleInputEmail1">Old Password </label>
-                    <input type="password" class="form-control" name="txtold_password" id="exampleInputEmail1" size="77" value="<?php if (isset($_POST['txtold_password']))?><?php echo $_POST['txtold_password']; ?>" placeholder="Enter Old Password">
+                    <label for="exampleInputEmail1">Username </label>
+                    <input type="text" class="form-control" name="txtusername" id="exampleInputEmail1" size="77" value="<?php if (isset($_POST['txtusername']))?><?php echo $_POST['txtusername']; ?>" placeholder="Enter Username">
+                  </div>
+				   <div class="form-group">
+                    <label for="exampleInputEmail1">Fullname </label>
+                    <input type="text" class="form-control" name="txtfullname" id="exampleInputEmail1" size="77" value="<?php if (isset($_POST['txtfullname']))?><?php echo $_POST['txtfullname']; ?>" placeholder="Enter Fullname">
                   </div>
                   <div class="form-group">
-                    <label for="exampleInputPassword1">New Password</label>
-                    <input type="password" class="form-control" name="txtnew_password" id="exampleInputPassword1" size="77" value="<?php if (isset($_POST['txtnew_password']))?><?php echo $_POST['txtnew_password']; ?>" placeholder="Enter New Password">
+                    <label for="exampleInputPassword1">Password</label>
+                    <input type="password" class="form-control" name="txtpassword" id="exampleInputPassword1" size="77" value="<?php if (isset($_POST['txtpassword']))?><?php echo $_POST['txtpassword']; ?>" placeholder="Enter Password">
                   </div>
                   <div class="form-group">
-                    <label for="exampleInputPassword1">New Password</label>
-                    <input type="password" class="form-control" name="txtconfirm_password" id="exampleInputPassword1" size="77" value="<?php if (isset($_POST['txtconfirm_password']))?><?php echo $_POST['txtconfirm_password']; ?>" placeholder="Confirm New Password">
+                    <label for="exampleInputPassword1">Re-Password</label>
+                    <input type="password" class="form-control" name="txtpassword2" id="exampleInputPassword1" size="77" value="<?php if (isset($_POST['txtpassword2']))?><?php echo $_POST['txtpassword2']; ?>" placeholder="Confirm Password">
                   </div>
+				  <div class="form-group">
+                    <label for="exampleInputPassword1">Designation</label>
+                    <select name="cmddesignation" id="select" class="form-control" required="">
+    <option value="Select Designation">Select Designation</option>
+   <option value="Super Admin">Super Admin</option>
+   <option value="Librarian">Librarian</option>
+   <option value="Bursar">Bursar</option>
+   <option value="Sport Director">Sport Director</option>
+
+   </select> 
+                     </div>
+                  <div class="form-group">
+                    <label for="exampleInputPassword1">Email</label>
+                    <input type="text" class="form-control" name="txtemail" id="exampleInputPassword1" size="77" value="<?php if (isset($_POST['txtemail']))?><?php echo $_POST['txtemail']; ?>" placeholder="Enter Email">
+                  </div>
+                  
+				 
                 </div>
                 <!-- /.card-body -->
 
                 <div class="card-footer">
-                  <button type="submit" name="btnpassword" class="btn btn-primary  custom-green-btn">Change </button>
+                  <button type="submit" name="btncreate" class="btn btn-primary custom-green-btn">Create User</button>
                 </div>
               </form>
             </div>
@@ -255,7 +270,7 @@ if(isset($_POST["btnpassword"])){
   </div>
   <!-- /.content-wrapper -->
   <footer class="main-footer">
-    <?php include('../footer.php');  ?>
+    <?php include('footer.php');  ?>
     <div class="float-right d-none d-sm-inline-block">
       
     </div>

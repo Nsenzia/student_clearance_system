@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Clearance Requests</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #28a745;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        button {
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px; /* Add margin for spacing */
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Clearance Requests</h2>
+
+<!-- Button to Fetch Requests -->
+<button onclick="fetchRequests()">Fetch Clearance Requests</button>
+
+<table id="requestsTable">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Student ID</th>
+            <th>Department</th>
+            <th>Status</th>
+            <th>Requested At</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Rows will be populated here -->
+    </tbody>
+</table>
+
+<script>
+function fetchRequests() {
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "fetch_clearance_requests.php", true); // PHP file to fetch requests
+    xhr.onload = function() {
+        if (xhr.status == 200) {
+            document.querySelector("#requestsTable tbody").innerHTML = xhr.responseText; // Update the table body
+        } else {
+            alert("Error fetching requests.");
+        }
+    };
+    xhr.send();
+}
+
+function updateStatus(requestId, status) {
+    // Perform AJAX request to update the status
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "update_request_status.php", true);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    xhr.onload = function() {
+        if (xhr.status == 200) {
+            alert("Request " + requestId + " has been " + status + ".");
+            fetchRequests(); // Refresh the requests after updating status
+        } else {
+            alert("Error updating the request.");
+        }
+    };
+    xhr.send("id=" + requestId + "&status=" + status);
+}
+</script>
+
+</body>
+</html>

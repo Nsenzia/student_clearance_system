@@ -1,51 +1,47 @@
 <?php
 session_start();
 error_reporting(1);
-include('connect2.php');
+include('../connect.php');
+
+$username = $_SESSION['admin-username'];
+date_default_timezone_set('Africa/Zambia');
+$current_date = date('Y-m-d H:i:s');
 
 if (isset($_POST['btnlogin'])) {
-    if (!empty($_POST['txtmatric_no']) && !empty($_POST['txtpassword'])) {
-        $matric_no = $_POST['txtmatric_no'];
+    if ($_POST['txtusername'] != "" || $_POST['txtpassword'] != "") {
+        $username = $_POST['txtusername'];
         $password = $_POST['txtpassword'];
+        $status = 'Active';
 
-        $sql = "SELECT * FROM `students` WHERE `matric_no`=? AND `password`=?";
-        $query = $dbh->prepare($sql);
-        $query->execute(array($matric_no, $password));
-        $row = $query->rowCount();
-        $fetch = $query->fetch();
+        $sql = "SELECT * FROM admin WHERE username=? AND password=? AND status=?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("sss", $username, $password, $status);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
 
-        if ($row > 0) {
-            foreach ($fetch as $items => $v) {
-                if (!is_numeric($items)) {
-                    $_SESSION[$items] = $v;
-                }
-            }
-
-            // Add session variable for matric_no
-            $_SESSION['student_id'] = $fetch['matric_no']; // Using 'matric_no' as the unique identifier
-
+        if ($row) {
+            $_SESSION["admin-username"] = $row['username'];
             header("Location: index.php");
         } else {
-            $_SESSION['error'] = 'Invalid Matric No/Password';
+            $_SESSION['error'] = 'Invalid Username/Password';
         }
     } else {
-        $_SESSION['error'] = 'Must Fill-in All Fields';
+        $_SESSION['error'] = 'Please fill in all fields';
     }
 }
 ?>
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Form | Online Student Clearance System</title>
+    <title>Admin Login | Online Clearance System</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
     <style>
-       body {
+        body {
             background-color: #f3f4f6;
             display: flex;
             justify-content: center;
@@ -152,23 +148,6 @@ if (isset($_POST['btnlogin'])) {
 
         .animate__fadeInDown {
             animation-duration: 0.75s;
-    
-/*The close button color*/
-            .btn-black {
-    background-color: black; /* Black background */
-    color: white; /* White text */
-    border: none; /* No border */
-    padding: 10px 15px; /* Padding for the button */
-    border-radius: 8px; /* Rounded corners */
-}
-
-.btn-black:hover {
-    background-color: white; /* White background on hover */
-    color: black; /* Black text on hover */
-    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3); /* Optional shadow */
-    cursor: pointer; /* Pointer cursor on hover */
-}
-
         }
     </style>
 </head>
@@ -176,21 +155,20 @@ if (isset($_POST['btnlogin'])) {
 
 <div class="login-box animate__animated animate__fadeInDown">
     <div class="login-logo">
-        <img src="images/logo.png" alt="Online Clearance Logo">
+        <img src="../images/logo.png" alt="Logo">
     </div>
-    <p class="login-box-msg">STUDENT LOGIN FORM</p>
-    <form action="" method="POST">
+    <p class="login-box-msg">ADMIN LOGIN FORM</p>
+    <form action="" method="post">
         <div class="form-group">
-            <input type="text" name="txtmatric_no" class="form-control" placeholder="Matric No" id="matric_no" required>
+            <input type="text" name="txtusername" class="form-control" placeholder="Username" required>
         </div>
         <div class="form-group">
-            <input type="password" name="txtpassword" class="form-control" placeholder="Password"  id="password" required>
+            <input type="password" name="txtpassword" class="form-control" placeholder="Password" required>
         </div>
         <button type="submit" name="btnlogin" class="btn btn-primary btn-block">Login</button>
         <a href="#" class="forgot-password-link">Forgot password?</a>
     </form>
 </div>
-
 
 <!-- Popup for Success or Error -->
 <?php if (!empty($_SESSION['success'])) { ?>
@@ -212,6 +190,7 @@ if (isset($_POST['btnlogin'])) {
     </div>
 </div>
 <?php unset($_SESSION['error']); } ?>
+
 
 <script>
     document.querySelectorAll('button[data-for]').forEach(function (el) {

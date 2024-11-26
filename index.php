@@ -1,135 +1,50 @@
 <?php
 session_start();
-error_reporting(0);
-include('connect.php');
-
-// Redirect to login if the session is empty
-if (empty($_SESSION['matric_no'])) {   
+error_reporting(1);
+include('../connect.php');
+if(empty($_SESSION['admin-username'])) {   
     header("Location: login.php"); 
-    exit;
+} else {
 }
 
-// Get necessary session details 
-$ID = $_SESSION["ID"];
-$matric_no = $_SESSION["matric_no"];
-$dept = $_SESSION['dept'];
-$faculty = $_SESSION['faculty'];
+$username = $_SESSION["admin-username"];
+date_default_timezone_set('Africa/Lagos');
+$current_date = date('Y-m-d');
 
-// Use prepared statements to prevent SQL injection
-// Get total fees
-$stmt = $conn->prepare("SELECT SUM(amount) AS tot_fee FROM fee WHERE faculty=? AND dept=?");
-$stmt->bind_param("ss", $faculty, $dept);
-$stmt->execute();
-$result = $stmt->get_result();
-$row_fee = $result->fetch_assoc();
-$tot_fee = $row_fee['tot_fee'];
-
-// Get total payments
-$stmt = $conn->prepare("SELECT SUM(amount) AS tot_pay FROM payment WHERE studentID=?");
-$stmt->bind_param("s", $ID);
-$stmt->execute();
-$result = $stmt->get_result();
-$rowpayment = $result->fetch_assoc();
-$tot_pay = $rowpayment['tot_pay'];
-
-// Calculate outstanding fees
-$outstanding_fee = $tot_fee - $tot_pay;
-
-// Get student access details
-$stmt = $conn->prepare("SELECT * FROM students WHERE matric_no=?");
-$stmt->bind_param("s", $matric_no);
-$stmt->execute();
-$result = $stmt->get_result();
-$rowaccess = $result->fetch_assoc();
-
-$assistant_registrar_exam = $rowaccess["is_assistant_registrar_exam_approved"];
-$assistant_registrar_stud_affairs = $rowaccess['is_assistant_registrar_stud_affairs_approved'];
-$director_head = $rowaccess['is_director_head_approved'];
-$librarian = $rowaccess['is_librarian_approved'];
-$bursar = $rowaccess['is_bursar_approved'];
-$deputy_registrar_stud_affairs = $rowaccess['is_deputy_registrar_stud_affairs_approved'];
-
-date_default_timezone_set('Africa/Lusaka');
-$current_date = date('Y-m-d H:i:s');
+$sql = "select * from admin where username ='$username'"; 
+$result = $conn->query($sql);
+$row2 = mysqli_fetch_array($result);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard | Online Clearance System</title>
-    <link href="css/bootstrap.min.css" rel="stylesheet">
-    <link href="font-awesome/css/font-awesome.css" rel="stylesheet">
-    <link href="css/plugins/morris/morris-0.4.3.min.css" rel="stylesheet">
-    <link href="js/plugins/gritter/jquery.gritter.css" rel="stylesheet">
-    <link href="css/animate.css" rel="stylesheet">
-    <link href="css/style.css" rel="stylesheet">
-    <link rel="icon" type="image/png" sizes="16x16" href="images/favicon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Welcome to Admin Dashboard</title>
+    <link rel="icon" type="image/png" sizes="16x16" href="../images/favicon.png">
+    <!-- Google Font: Source Sans Pro -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="plugins/fontawesome-free/css/all.min.css">
+    <!-- Ionicons -->
+    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <!-- Tempusdominus Bootstrap 4 -->
+    <link rel="stylesheet" href="plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css">
+    <!-- iCheck -->
+    <link rel="stylesheet" href="plugins/icheck-bootstrap/icheck-bootstrap.min.css">
+    <!-- JQVMap -->
+    <link rel="stylesheet" href="plugins/jqvmap/jqvmap.min.css">
+    <!-- Theme style -->
+    <link rel="stylesheet" href="dist/css/adminlte.min.css">
+    <!-- overlayScrollbars -->
+    <link rel="stylesheet" href="plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+    <!-- Daterange picker -->
+    <link rel="stylesheet" href="plugins/daterangepicker/daterangepicker.css">
+    <!-- summernote -->
+    <link rel="stylesheet" href="plugins/summernote/summernote-bs4.min.css">
 
     <style>
-        /* Spinner for processing */
-        .spinner {
-            display: inline-block;
-            width: 1em;
-            height: 1em;
-            border: 0.15em solid currentColor;
-            border-bottom-color: transparent;
-            border-radius: 50%;
-            animation: spinner 0.6s linear infinite;
-        }
-
-        @keyframes spinner {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Pending and Approved Buttons */
-        .pending {
-            color: white;
-            background-color: red;
-            padding: 5px 10px;
-            border-radius: 25px; /* Rounded border for buttons */
-            font-size: 1em;
-            display: inline-block;
-            border: 2px solid #ff9999;
-        }
-
-        .approved {
-            color: white;
-            background-color: #187C4E;
-            padding: 5px 10px;
-            border-radius: 25px; /* Rounded border for buttons */
-            font-size: 1em;
-            display: inline-block;
-            border: 2px solid #66cc66;
-        }
-
-        /* Table styling with rounded borders */
-        table {
-            width: 100%;
-            table-layout: fixed;
-            border-collapse: separate; /* Important to allow rounded corners */
-            border-spacing: 0; /* Remove gaps between borders */
-            border: 2px solid #ddd;
-            border-radius: 15px; /* Rounded corners for the whole table */
-        }
-
-        th {
-            text-align: center;
-            width: 14.29%;
-            padding: 10px;
-            border: 2px solid #ddd;
-            background-color: #f9f9f9;
-            font-weight: bold;
-            border-radius: 10px; /* Optional for individual column corners */
-        }
-
-        tbody td {
-            border: 2px solid #ddd;
-            padding: 8px;
-            border-radius: 10px; /* Rounded corners for table rows */
-        }
-
         /* Custom green button */
         .custom-green-btn {
             background-color: #187C4E !important;
@@ -138,180 +53,296 @@ $current_date = date('Y-m-d H:i:s');
             border: 2px solid #187C4E;
             border-radius: 25px; /* Rounded button */
         }
-
-        /* Rounded borders for boxes */
-        .ibox {
-            border: 2px solid #ccc;
-            padding: 10px;
-            border-radius: 15px; /* Rounded corners for boxes */
-        }
-
-        .ibox-title {
-            background-color: #f9f9f9;
-            border-bottom: 2px solid #ddd;
-            padding: 10px;
-            border-radius: 10px 10px 0 0; /* Rounded top corners */
-        }
-
-        .ibox-content {
-            padding: 15px;
-            border-radius: 0 0 15px 15px; /* Rounded bottom corners */
-        }
     </style>
 </head>
+<body class="hold-transition sidebar-mini layout-fixed">
+<div class="wrapper">
 
-<body>
-    <div id="wrapper">
-        <nav class="navbar-default navbar-static-side" role="navigation">
-            <div class="sidebar-collapse">
-                <ul class="nav metismenu" id="side-menu">
-                    <li class="nav-header">
-                        <div class="dropdown profile-element">
-                            <span>
-                                <img src="<?php echo $rowaccess['photo']; ?>" alt="image" width="142" height="153" class="img-circle" />
-                            </span>
-                            <a data-toggle="dropdown" class="dropdown-toggle" href="#">
-                                <span class="clear">
-                                    <span class="text-muted text-xs block">Student No: <?php echo $rowaccess['matric_no']; ?> <b class="caret"></b></span>
-                                </span>
-                            </a>
-                            <ul class="dropdown-menu animated fadeInRight m-t-xs">
-                                <li><a href="logout.php">Logout</a></li>
-                            </ul>
-                        </div>  
-                        <?php include('sidebar.php'); ?>
-                    </li>
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <!-- Left navbar links -->
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="#" class="nav-link">Home</a>
+            </li>
+        </ul>
+
+        <!-- SEARCH FORM -->
+        <form class="form-inline ml-3">
+            <div class="input-group input-group-sm">
+                <input class="form-control form-control-navbar" type="search" placeholder="Search" aria-label="Search">
+                <div class="input-group-append">
+                    <button class="btn btn-navbar custom-green-btn" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Right navbar links -->
+        <ul class="navbar-nav ml-auto"></ul>
+    </nav>
+    <!-- /.navbar -->
+
+    <!-- Main Sidebar Container -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <!-- Brand Logo -->
+        <a href="index.php" class="brand-link">
+            <img src="../images/logo.png" alt=" Logo" width="155" height="99" class="" style="opacity: .8">
+            <span class="brand-text font-weight-light"></span>
+        </a>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Sidebar user panel (optional) -->
+            <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+                <div class="image">
+                    <img src="../<?php echo $row2['photo']; ?>" alt="User Image" width="220" height="192" class="img-circle elevation-2">
+                </div>
+                <div class="info">
+                    <a href="#" class="d-block"><?php echo $row2['fullname']; ?></a>
+                </div>
+            </div>
+
+            <!-- Sidebar Menu -->
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                    <?php include('sidebar.php'); ?>
                 </ul>
-            </div>
-        </nav>
-
-        <div id="page-wrapper" class="gray-bg">
-            <div class="row border-bottom">
-                <nav class="navbar navbar-static-top white-bg" role="navigation" style="margin-bottom: 0">
-                    <div class="navbar-header">
-                        <a class="navbar-minimalize minimalize-styl-2 btn btn-primary custom-green-btn" href="#">
-                            <i class="fa fa-bars"></i>
-                        </a>
-                    </div>
-                    <ul class="nav navbar-top-links navbar-right">
-                        <li>
-                            <span class="m-r-sm text-muted welcome-message">Welcome <?php echo $rowaccess['fullname']; ?></span>
-                        </li>
-                        <li>
-                            <a href="logout.php">
-                                <i class="fa fa-sign-out"></i> Log out
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
-
-            <div class="wrapper wrapper-content">
-                <div class="row">
-                    <!-- Total Fee -->
-                    <div class="col-lg-3">
-                        <div class="ibox float-e-margins">
-                            <div class="ibox-title">
-                                <h5><span class="label label-success pull-right">Total Fee</span></h5>
-                            </div>
-                            <div class="ibox-content">
-                                <h3 class="no-margins">ZMW<?php echo number_format($tot_fee, 2); ?></h3>
-                            </div>
-                        </div>
-                    </div>             
-            
-                    <!-- Amount Paid -->
-                    <div class="col-lg-3">
-                        <div class="ibox float-e-margins">
-                            <div class="ibox-title">
-                                <h5><span class="label label-secondary pull-right">Amount Paid</span></h5>
-                            </div>
-                            <div class="ibox-content">
-                                <h3 class="no-margins">ZMW<?php echo number_format($tot_pay, 2); ?></h3>
-                            </div>
-                        </div>
-                    </div>    
-                
-                    <!-- Outstanding Fee -->
-                    <div class="col-lg-3">
-                        <div class="ibox float-e-margins">
-                            <div class="ibox-title">
-                                <h5>Outstanding Fee</h5>
-                                <span class="label label-warning pull-right">ZMW</span>
-                            </div>
-                            <div class="ibox-content">
-                                <h3 class="no-margins">ZMW<?php echo number_format($outstanding_fee, 2); ?></h3>
-                            </div>
-                        </div>
-                    </div>  
-                
-                     <!-- Clearance Status -->
-                     <div class="col-lg-3">
-    <div class="ibox float-e-margins">
-        <div class="ibox-title">
-            <h5><span class="label label-info pull-right">Status</span></h5>
+            </nav>
+            <!-- /.sidebar-menu -->
         </div>
-        <div class="ibox-content">
-            <h3 class="no-margins">
-                <?php if ($assistant_registrar_exam == 1 && $assistant_registrar_stud_affairs == 1 && $director_head == 1 && $librarian == 1 && $bursar == 1 && $deputy_registrar_stud_affairs == 1) { ?>
-                    <span class="approved">Approved</span>
-                    <br>
-                    <small><a href="letter.php" target="_blank">Download Clearance Letter</a></small>
-                <?php } else { ?>
-                    <span class="pending">Pending <span class="spinner" style="color: white;"></span></span>
-                    <br>
-                    <small><a href="check_process.php" target="_blank" >Check Process</a></small>
-                <?php } ?>
-            </h3>
-        </div>
-    </div>
-                </div>
-
-                <!-- Clearance Details Table -->
-                <div class="row">
-                    <div class="col-lg-12">
-                        <div class="ibox float-e-margins">
-                            <div class="ibox-title">
-                                <h5>Clearance Details</h5>
-                            </div>
-                            <div class="ibox-content">
-                                <table class="table table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <th>Assistant Registrar (Examination)</th>
-                                            <th>Assistant Registrar (Student Affairs)</th>
-                                            <th>Director/Head</th>
-                                            <th>Librarian</th>
-                                            <th>Bursar</th>
-                                            <th>Deputy Registrar (Student Affairs)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td><?php echo ($assistant_registrar_exam == 1) ? '<span class="approved">Approved</span>' : '<span class="pending">Pending <span class="spinner"></span></span>'; ?></td>
-                                            <td><?php echo ($assistant_registrar_stud_affairs == 1) ? '<span class="approved">Approved</span>' : '<span class="pending">Pending <span class="spinner"></span></span>'; ?></td>
-                                            <td><?php echo ($director_head == 1) ? '<span class="approved">Approved</span>' : '<span class="pending">Pending <span class="spinner"></span></span>'; ?></td>
-                                            <td><?php echo ($librarian == 1) ? '<span class="approved">Approved</span>' : '<span class="pending">Pending <span class="spinner"></span></span>'; ?></td>
-                                            <td><?php echo ($bursar == 1) ? '<span class="approved">Approved</span>' : '<span class="pending">Pending <span class="spinner"></span></span>'; ?></td>
-                                            <td><?php echo ($deputy_registrar_stud_affairs == 1) ? '<span class="approved">Approved</span>' : '<span class="pending">Pending <span class="spinner"></span></span>'; ?></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
+        <!-- /.sidebar -->
+    </aside>
   
-    </div>
+    <?php
+    $query = "SELECT * FROM students"; 
+    $result = mysqli_query($conn, $query); 
+    $row_students = ($result) ? mysqli_num_rows($result) : 0;
 
-    <script src="js/jquery-3.1.1.min.js"></script>
-    <script src="js/bootstrap.min.js"></script>
-    <script src="js/plugins/metisMenu/jquery.metisMenu.js"></script>
-    <script src="js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
-    <script src="js/inspinia.js"></script>
+    $query = "SELECT * FROM admin"; 
+    $result = mysqli_query($conn, $query); 
+    $row_users = ($result) ? mysqli_num_rows($result) : 0;
+
+    // Get total amount paid as fee
+    $sql = "SELECT SUM(amount) AS tot_pay FROM payment"; 
+    $result = $conn->query($sql);
+    $rowpayment = mysqli_fetch_array($result);
+    $tot_pay = $rowpayment['tot_pay'];
+    ?>
     
+    <!-- Content Wrapper. Contains page content -->
+    <div class="content-wrapper">
+        <!-- Content Header (Page header) -->
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0 text-dark">Dashboard</h1>
+                    </div><!-- /.col -->
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a href="#">Home</a></li>
+                            <li class="breadcrumb-item active">Dashboard</li>
+                        </ol>
+                    </div><!-- /.col -->
+                </div><!-- /.row -->
+            </div><!-- /.container-fluid -->
+        </div>
+        <!-- /.content-header -->
+
+        <!-- Main content -->
+        <section class="content">
+            <div class="container-fluid">
+                <!-- Info boxes -->
+                <div class="row">
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="info-box">
+                            <span class="info-box-icon bg-info elevation-1 custom-green-btn"><i class="fa fa-users" id="icon"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">No. Of Student(s)</span>
+                                <span class="info-box-number"><?php echo $row_students; ?></span>
+                            </div>
+                            <!-- /.info-box-content -->
+                        </div>
+                        <!-- /.info-box -->
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="info-box">
+                            <span class="info-box-icon bg-success elevation-1 custom-green-btn"><i class="fa fa-user" id="icon"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">No. Of User(s)</span>
+                                <span class="info-box-number"><?php echo $row_users; ?></span>
+                            </div>
+                            <!-- /.info-box-content -->
+                        </div>
+                        <!-- /.info-box -->
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="info-box mb-3">
+                            <span class="info-box-icon bg-primary elevation-1"><i class="fas fa-dollar-sign"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Total Amount Paid</span>
+                                <span class="info-box-number">ZMW<?php echo number_format((float)$tot_pay, 2); ?></span>
+                            </div>
+                            <!-- /.info-box-content -->
+                        </div>
+                        <!-- /.info-box -->
+                    </div>
+                </div>
+                <!-- /.row -->
+
+                <!-- Main row -->
+                <div class="row">
+                    <div class="col-md-8">
+                        <!-- MAP & BOX PANE -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <!-- DIRECT CHAT -->
+                                <!--/.direct-chat -->
+                            </div>
+                            <!-- /.col -->
+
+                            <div class="col-md-6">
+                                <!-- USERS LIST -->
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h3 class="card-title">Latest Student(s)</h3>
+                                        <div class="card-tools">
+                                            <span class="badge badge-danger custom-green-btn"><?php echo $row_students; ?> New Student(s)</span>
+                                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                                <i class="fas fa-minus"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-tool" data-card-widget="remove">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <ul class="users-list clearfix">
+                                            <?php
+                                            $sql = "SELECT * FROM students ORDER BY ID DESC LIMIT 8;";
+                                            $result = $conn->query($sql);
+                                            while ($row_new_students = $result->fetch_assoc()) { 
+                                            ?>
+                                                <li>
+                                                    <img src="../<?php echo $row_new_students['photo']; ?>" alt="students Image">
+                                                    <a class="users-list-name" href="#"><?php echo $row_new_students['fullname']; ?></a>
+                                                    <span class="users-list-date"><?php echo $row_new_students['matric_no']; ?></span>
+                                                </li>
+                                            <?php } ?>
+                                        </ul>
+                                        <!-- /.users-list -->
+                                    </div>
+                                    <!-- /.card-body -->
+                                </div>
+                                <!--/.card -->
+
+                                <!-- Comment Submission Form -->
+                                <div class="container">
+                                <div class="wrapper">
+
+<!-- Display Success Message -->
+<?php if (isset($_GET['success'])): ?>
+    <div class='alert alert-success' style='margin: 15px;'>
+        Comment added successfully!
+    </div>
+<?php endif; ?>
+
+
+
+<!-- Main Sidebar Container -->
+<aside class="main-sidebar sidebar-dark-primary elevation-4">
+    <a href="index.php" class="brand-link">
+        <img src="../images/logo.png" alt="Logo" width="155" height="99" style="opacity: .8">
+    </a>
+
+    <div class="sidebar">
+        <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+            <div class="image">
+                <img src="../<?php echo $row2['photo']; ?>" alt="User Image" class="img-circle elevation-2">
+            </div>
+            <div class="info">
+                <a href="#" class="d-block"><?php echo $row2['fullname']; ?></a>
+            </div>
+        </div>
+        <nav class="mt-2">
+            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                <?php include('sidebar.php'); ?>
+            </ul>
+        </nav>
+    </div>
+</aside>
+
+
+</div>
+    <script src="js/bootstrap.min.js"></script>
+</body>
+                                <!-- /.card -->
+                            </div>
+                            <!-- /.col -->
+                        </div>
+                        <!-- /.row -->
+                    </div>
+                    <!-- /.col -->
+                </div>
+                <!-- /.row -->
+            </div>
+            <!-- /.container-fluid -->
+        </section>
+        <!-- /.content -->
+    </div>
+    <!-- /.content-wrapper -->
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <strong>Copyright &copy; 2024 <a href="#">National Institute of Public Adminstration</a>.</strong>
+        All rights reserved.
+        <div class="float-right d-none d-sm-inline-block">
+           
+        </div>
+    </footer>
+</div>
+<!-- ./wrapper -->
+
+<!-- jQuery -->
+<script src="plugins/jquery/jquery.min.js"></script>
+<!-- jQuery UI 1.11.4 -->
+<script src="plugins/jquery-ui/jquery-ui.min.js"></script>
+<!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
+<script>
+    $.widget.bridge('uibutton', $.ui.button);
+</script>
+<!-- Bootstrap 4 -->
+<script src="plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<!-- ChartJS -->
+<script src="plugins/chart.js/Chart.min.js"></script>
+<!-- Sparkline -->
+<script src="plugins/sparkline/jquery.sparkline.min.js"></script>
+<!-- JQVMap -->
+<script src="plugins/jqvmap/jquery.vmap.min.js"></script>
+<script src="plugins/jqvmap/maps/jquery.vmap.usa.js"></script>
+<!-- jQuery Knob Chart -->
+<script src="plugins/jquery-knob/jquery.knob.min.js"></script>
+<!-- daterangepicker -->
+<script src="plugins/moment/moment.min.js"></script>
+<script src="plugins/daterangepicker/daterangepicker.js"></script>
+<!-- Tempusdominus Bootstrap 4 -->
+<script src="plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js"></script>
+<!-- Summernote -->
+<script src="plugins/summernote/summernote-bs4.min.js"></script>
+<!-- overlayScrollbars -->
+<script src="plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+<!-- AdminLTE App -->
+<script src="dist/js/adminlte.js"></script>
+<!-- AdminLTE for demo purposes -->
+<script src="dist/js/demo.js"></script>
+<!-- AdminLTE dashboard demo (This is only for demo purposes) -->
+<script src="dist/js/pages/dashboard.js"></script>
 </body>
 </html>
